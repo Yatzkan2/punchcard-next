@@ -272,5 +272,11 @@
     "low_warning": "One or more passes are running low — contact your studio soon.",
     "tab_passes": "My Passes",
     "tab_schedule": "Schedule"
+  },
+  "client": {
+    "owes_badge": "owes {{count}}",
+    "debt_dialog_title": "You have an outstanding balance",
+    "debt_dialog_body": "Please contact the studio to settle. Debt details:",
+    "debt_line": "{{product}}: {{count}}"
   }
 }

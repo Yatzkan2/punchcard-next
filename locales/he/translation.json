@@ -272,5 +272,11 @@
     "low_warning": "אחת או יותר מהכרטיסיות עומדות להסתיים — צור קשר עם הסטודיו בקרוב.",
     "tab_passes": "הכרטיסיות שלי",
     "tab_schedule": "לוח שיעורים"
+  },
+  "client": {
+    "owes_badge": "חוב {{count}}",
+    "debt_dialog_title": "יש לך חוב",
+    "debt_dialog_body": "אנא צרו קשר עם הסטודיו להסדרת התשלום. פירוט החוב:",
+    "debt_line": "{{product}}: {{count}}"
   }
 }

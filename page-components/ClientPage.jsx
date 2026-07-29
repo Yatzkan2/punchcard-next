@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getClientByCode } from '../lib/clients'
+import { getDebtByCode } from '../lib/debts'
 import Spinner from '../components/shared/Spinner'
 import LangToggle from '../components/shared/LangToggle'
 import Topbar from '../components/shared/Topbar'
@@ -152,11 +153,12 @@ function LookupCard({ onFound }) {
 
 // ─── Result ───────────────────────────────────────────────────────────────────
 
-function PassCard({ product_name, remaining }) {
+function PassCard({ product_id, product_name, remaining, owed }) {
   const { t } = useTranslation()
   const { labelKey, color } = statusFor(remaining)
   const c   = palette[color]
   const pct = Math.min(Math.round((remaining / 10) * 100), 100)
+  const [showDebtDialog, setShowDebtDialog] = useState(false)
 
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -172,8 +174,23 @@ function PassCard({ product_name, remaining }) {
           <p className="text-sm text-gray-400 mb-1">
             {remaining === 1 ? t('client_view.pass_remaining_one') : t('client_view.pass_remaining_other')}
           </p>
+          {owed > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDebtDialog(true)}
+              className="text-sm bg-debt-badge-bg text-alert-red font-bold px-1.5 py-0.5 rounded-full mb-1 cursor-pointer hover:bg-alert-red/15 transition-colors"
+            >
+              {t('client.owes_badge', { count: owed })}
+            </button>
+          )}
         </div>
       </div>
+      {showDebtDialog && (
+        <DebtDialog
+          debt={[{ product_id, product_name, debt_count: owed }]}
+          onClose={() => setShowDebtDialog(false)}
+        />
+      )}
       <div className="px-4 pb-4">
         <div className={`h-2 rounded-full ${c.track} overflow-hidden`}>
           <div
@@ -190,18 +207,63 @@ function PassCard({ product_name, remaining }) {
   )
 }
 
+function DebtDialog({ debt, onClose }) {
+  const { t } = useTranslation()
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-xs bg-card rounded-2xl shadow-2xl border border-gray-100 p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-2">{t('client.debt_dialog_title')}</h3>
+        <p className="text-sm text-gray-500 mb-4">{t('client.debt_dialog_body')}</p>
+        <ul className="space-y-1 mb-6">
+          {debt.map(d => (
+            <li key={d.product_id} className="text-sm text-alert-red font-medium">
+              {t('client.debt_line', { product: d.product_name, count: d.debt_count })}
+            </li>
+          ))}
+        </ul>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            autoFocus
+            className="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-hover active:bg-primary-active rounded-xl transition-colors"
+          >
+            {t('schedule.debt_summary_ok')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ResultCard({ client, onBack }) {
   const { t } = useTranslation()
   const { name, passes } = client
   const hasWarning = passes.some(p => p.remaining <= 2)
   const [visible, setVisible] = useState(0)
   const [tab,     setTab]     = useState('passes')
+  const [debt,    setDebt]    = useState([])
+  const [showDebtDialog, setShowDebtDialog] = useState(false)
 
   useEffect(() => {
     const t1 = setTimeout(() => setVisible(1), 200)
     const t2 = setTimeout(() => setVisible(2), 700)
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
+
+  useEffect(() => {
+    getDebtByCode(client.code)
+      .then(data => {
+        setDebt(data)
+        if (data.length > 0) setShowDebtDialog(true)
+      })
+      .catch(() => setDebt([]))
+  }, [client.code])
+
+  const debtByProduct = Object.fromEntries(debt.map(d => [d.product_id, d.debt_count]))
 
   const tabBtn = active =>
     `flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
@@ -253,7 +315,7 @@ function ResultCard({ client, onBack }) {
                   <p className="text-sm text-gray-400 text-center py-6">{t('client_view.no_passes')}</p>
                 ) : (
                   [...passes].sort((a, b) => (b.remaining === 0) - (a.remaining === 0) || a.remaining - b.remaining).map(p => (
-                    <PassCard key={p.product_name} product_name={p.product_name} remaining={p.remaining} />
+                    <PassCard key={p.product_name} product_id={p.product_id} product_name={p.product_name} remaining={p.remaining} owed={debtByProduct[p.product_id]} />
                   ))
                 )}
               </div>
@@ -269,6 +331,10 @@ function ResultCard({ client, onBack }) {
         </div>
 
       </div>
+
+      {showDebtDialog && (
+        <DebtDialog debt={debt} onClose={() => setShowDebtDialog(false)} />
+      )}
     </div>
   )
 }
