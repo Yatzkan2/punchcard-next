@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getSlotsByWeek, canClientCancel } from '../../lib/slots'
+import { getSlotsByWeek, canClientCancel, getFutureRegistrationsForClient } from '../../lib/slots'
 import { registerClient, unregisterClient } from '../../lib/registrations'
+import { getPassesForClient } from '../../lib/passes'
+import { getSetting } from '../../lib/settings'
 import { logEvent } from '../../lib/activityLog'
 import WeekNav from '../shared/WeekNav'
 import Spinner from '../shared/Spinner'
@@ -68,13 +70,17 @@ function RegisterConfirmDialog({ slot, t, onConfirm, onCancel }) {
   )
 }
 
-function SlotRow({ slot, clientId, locale, t, onRegister, onUnregister }) {
+function SlotRow({ slot, clientId, locale, t, onRegister, onUnregister, policy, remainingByProduct, upcomingByProduct }) {
   const now          = new Date()
   const startsAt     = new Date(slot.starts_at)
   const isPast       = startsAt < now
   const isRegistered = slot.slot_registrations?.some(r => r.clients?.id === clientId)
   const spotsLeft    = slot.capacity - (slot.slot_registrations?.length ?? 0)
   const isFull       = spotsLeft <= 0
+
+  const remaining = remainingByProduct[slot.product_id] ?? 0
+  const upcoming  = upcomingByProduct[slot.product_id] ?? 0
+  const registrationBlocked = policy === 'strict' && upcoming >= remaining
 
   const [confirming, setConfirming] = useState(false)
   const [busy,       setBusy]       = useState(false)
@@ -161,6 +167,13 @@ function SlotRow({ slot, clientId, locale, t, onRegister, onUnregister }) {
             <span className="text-xs tabular-nums text-gray-400">
               {t('schedule.spots_left', { count: spotsLeft })}
             </span>
+          ) : registrationBlocked ? (
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              <svg className="w-3 h-3 shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                <path fillRule="evenodd" d="M4 6.5V5a4 4 0 1 1 8 0v1.5h.25A1.75 1.75 0 0 1 14 8.25v5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5A1.75 1.75 0 0 1 3.75 6.5H4Zm1.5-1.5a2.5 2.5 0 0 1 5 0v1.5h-5V5Z" clipRule="evenodd"/>
+              </svg>
+              {t('schedule.register_blocked_insufficient')}
+            </span>
           ) : (
             <>
               <span className={`text-xs tabular-nums ${spotsLeft <= 3 ? 'text-amber-500 font-medium' : 'text-gray-400'}`}>
@@ -189,6 +202,10 @@ export default function Schedule({ clientId, clientName }) {
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState('')
 
+  const [policy, setPolicy] = useState('strict')
+  const [remainingByProduct, setRemainingByProduct] = useState({})
+  const [upcomingByProduct,  setUpcomingByProduct]  = useState({})
+
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -202,7 +219,30 @@ export default function Schedule({ clientId, clientName }) {
     }
   }, [weekStart])
 
+  const refreshCounts = useCallback(async () => {
+    try {
+      const [passes, futureRegs] = await Promise.all([
+        getPassesForClient(clientId),
+        getFutureRegistrationsForClient(clientId),
+      ])
+      setRemainingByProduct(Object.fromEntries(passes.map(p => [p.product_id, p.remaining])))
+      const upcoming = {}
+      for (const reg of futureRegs) {
+        upcoming[reg.product_id] = (upcoming[reg.product_id] ?? 0) + 1
+      }
+      setUpcomingByProduct(upcoming)
+    } catch (err) {
+      console.error(err)
+    }
+  }, [clientId])
+
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    getSetting('registration_policy').then(setPolicy).catch(() => setPolicy('strict'))
+  }, [])
+
+  useEffect(() => { refreshCounts() }, [refreshCounts])
 
   function prevWeek() {
     setWeekStart(prev => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d })
@@ -228,6 +268,7 @@ export default function Schedule({ clientId, clientName }) {
       })
     }
     await load()
+    await refreshCounts()
   }
 
   async function handleUnregister(slotId) {
@@ -247,6 +288,7 @@ export default function Schedule({ clientId, clientName }) {
       })
     }
     await load()
+    await refreshCounts()
   }
 
   const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'short' })
@@ -287,6 +329,9 @@ export default function Schedule({ clientId, clientName }) {
                   t={t}
                   onRegister={handleRegister}
                   onUnregister={handleUnregister}
+                  policy={policy}
+                  remainingByProduct={remainingByProduct}
+                  upcomingByProduct={upcomingByProduct}
                 />
               ))}
             </div>

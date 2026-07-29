@@ -186,7 +186,8 @@
     "load_error": "טעינת הלוח נכשלה — נסו שוב",
     "no_cancel_warning": "שימו לב: השיעור מתחיל בעוד פחות מ-{{hours}} שעות. לא ניתן יהיה לבטל לאחר ההרשמה",
     "register_error": "ההרשמה נכשלה — נסו שוב או פנו לסטודיו",
-    "cancel_error": "הביטול נכשל — נסו שוב או פנו לסטודיו"
+    "cancel_error": "הביטול נכשל — נסו שוב או פנו לסטודיו",
+    "register_blocked_insufficient": "אין מספיק כניסות להרשמה"
   },
   "activity": {
     "title": "פעילות",
@@ -249,7 +250,11 @@
     "label_admin_email": "אימייל ניהול",
     "default_product": "פעילות ברירת מחדל לשיעורים חדשים",
     "label_cancellation_cutoff_default": "חלון ביטול ברירת מחדל (שעות)",
-    "hint_cancellation_cutoff": "חל על שיעורים חדשים"
+    "hint_cancellation_cutoff": "חל על שיעורים חדשים",
+    "registration_policy_label": "מדיניות הרשמה",
+    "registration_policy_strict": "מחמירה",
+    "registration_policy_lenient": "גמישה",
+    "registration_policy_hint": "מחמירה: חסימת הרשמה כשאין מספיק כניסות. גמישה: הרשמה חופשית וצבירת חוב."
   },
   "client_view": {
     "home": "בית",

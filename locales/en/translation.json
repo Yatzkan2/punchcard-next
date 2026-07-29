@@ -186,7 +186,8 @@
     "load_error": "Couldn't load the schedule — please try again",
     "no_cancel_warning": "Note: this class starts in under {{hours}} hours — you won't be able to cancel after registering",
     "register_error": "Couldn't register — please try again or contact the studio",
-    "cancel_error": "Couldn't cancel — please try again or contact the studio"
+    "cancel_error": "Couldn't cancel — please try again or contact the studio",
+    "register_blocked_insufficient": "Not enough passes to register"
   },
   "activity": {
     "title": "Activity",
@@ -249,7 +250,11 @@
     "label_admin_email": "Admin email",
     "default_product": "Default activity for new classes",
     "label_cancellation_cutoff_default": "Default cancellation cutoff (hours)",
-    "hint_cancellation_cutoff": "Applied to new slots by default"
+    "hint_cancellation_cutoff": "Applied to new slots by default",
+    "registration_policy_label": "Registration policy",
+    "registration_policy_strict": "Strict",
+    "registration_policy_lenient": "Lenient",
+    "registration_policy_hint": "Strict: block registration without enough passes. Lenient: free registration, debt accrues."
   },
   "client_view": {
     "home": "Home",

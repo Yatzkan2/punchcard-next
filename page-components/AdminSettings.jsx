@@ -40,6 +40,7 @@ const DEFAULTS = {
   admin_email: '',
   cancellation_cutoff_default: '12',
   default_product_id: '',
+  registration_policy: 'strict',
 }
 
 export default function AdminSettings() {
@@ -174,6 +175,25 @@ export default function AdminSettings() {
                 onChange={e => set('cancellation_cutoff_default', e.target.value)}
                 className={INPUT}
               />
+            </Field>
+            <Field
+              label={t('settings.registration_policy_label')}
+              hint={t('settings.registration_policy_hint')}
+            >
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                {['strict', 'lenient'].map(policy => (
+                  <button
+                    key={policy}
+                    type="button"
+                    onClick={() => set('registration_policy', policy)}
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      values.registration_policy === policy ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t(`settings.registration_policy_${policy}`)}
+                  </button>
+                ))}
+              </div>
             </Field>
           </Section>
 
